@@ -35,8 +35,8 @@ torlog = logging.getLogger(__name__)
 # TODO implement multiple magnets from same message if needed
 # this function is to ensure that only one magnet is passed at a time
 def get_magnets(text):
-    matches = [i for i in re.finditer("magnet:", text)]
-    magnets = list()
+    matches = list(re.finditer("magnet:", text))
+    magnets = []
 
     for i in range(len(matches)):
         if i == len(matches) - 1:
@@ -53,7 +53,7 @@ def get_magnets(text):
 
 
 def get_entities(msg):
-    urls = list()
+    urls = []
 
     for i in msg.entities:
         if isinstance(i, types.MessageEntityUrl):
@@ -62,10 +62,7 @@ def get_entities(msg):
         elif isinstance(i, types.MessageEntityTextUrl):
             urls.append(i.url)
 
-    if len(urls) > 0:
-        return urls[0]
-    else:
-        return None
+    return urls[0] if urls else None
 
 
 async def check_link(msg, rclone=False, is_zip=False, extract=False, prev_msg=None):

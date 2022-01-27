@@ -35,13 +35,11 @@ async def progress_for_pyrogram(
         return
 
     if round(diff % time_out) == 0 or current == total:
-        if cancel_msg is not None:
-            # dirty alt. was not able to find something to stop upload
-            # todo inspect with "StopAsyncIteration"
-            # IG Open stream will be Garbage Collected
-            if updb.get_cancel_status(cancel_msg.chat.id, cancel_msg.message_id):
-                print("Stopping transmission")
-                client.stop_transmission()
+        if cancel_msg is not None and updb.get_cancel_status(
+            cancel_msg.chat.id, cancel_msg.message_id
+        ):
+            print("Stopping transmission")
+            client.stop_transmission()
 
         # if round(current / total * 100, 0) % 5 == 0:
         percentage = current * 100 / total

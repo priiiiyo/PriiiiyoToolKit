@@ -19,11 +19,10 @@ async def progress(
     now = time.time()
     diff = now - start
     if round(diff % time_out) == 0 or current == total:
-        if cancel_msg is not None:
-            # dirty alt. was not able to find something to stop upload
-            # todo inspect with "StopAsyncIteration"
-            if updb.get_cancel_status(cancel_msg.chat_id, cancel_msg.id):
-                raise Exception("cancel the upload")
+        if cancel_msg is not None and updb.get_cancel_status(
+            cancel_msg.chat_id, cancel_msg.id
+        ):
+            raise Exception("cancel the upload")
 
         # if round(current / total * 100, 0) % 5 == 0:
         percentage = current * 100 / total
@@ -38,18 +37,24 @@ async def progress(
             seconds=estimated_total_time / 1000
         )
 
-        progress = "\n╭─── ⌊__𝐔𝐩𝐥𝐨𝐚𝐝𝐢𝐧𝐠...: [{2}%] 📤__⌉\n│ \n├[{0}{1}]\n".format(
-            "".join(
-                [get_val("COMPLETED_STR") for i in range(math.floor(percentage / 10))]
-            ),
-            "".join(
-                [
-                    get_val("REMAINING_STR")
-                    for i in range(10 - math.floor(percentage / 10))
-                ]
-            ),
-            round(percentage, 2),
+        progress = (
+            "\n╭─── ⌊__𝐔𝐩𝐥𝐨𝐚𝐝𝐢𝐧𝐠...: [{2}%] 📤__⌉\n│ \n├[{0}{1}]\n".format(
+                "".join(
+                    [
+                        get_val("COMPLETED_STR")
+                        for _ in range(math.floor(percentage / 10))
+                    ]
+                ),
+                "".join(
+                    [
+                        get_val("REMAINING_STR")
+                        for i in range(10 - math.floor(percentage / 10))
+                    ]
+                ),
+                round(percentage, 2),
+            )
         )
+
 
         tmp = progress +"│" + "\n├**𝐃𝐨𝐧𝐞 ✅ : **{0}\n├**𝐓𝐨𝐭𝐚𝐥 🗳 : **{1}\n├**𝐒𝐩𝐞𝐞𝐝** 🚀 : {2}/s 🔺\n├**𝐄𝐓𝐀** ⏳ : {3}".format(
             human_readable_bytes(current),
@@ -70,6 +75,4 @@ async def progress(
                 )
         except Exception as e:
             logging.error(e)
-        return
-    else:
-        return
+    return

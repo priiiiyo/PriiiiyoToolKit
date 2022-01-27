@@ -20,17 +20,15 @@ aloop = asyncio.get_event_loop()
 
 
 async def aria_start():
-    aria2_daemon_start_cmd = []
-    # start the daemon, aria2c command
-
-    aria2_daemon_start_cmd.append("aria2c")
-    aria2_daemon_start_cmd.append("--daemon=true")
-    aria2_daemon_start_cmd.append("--enable-rpc")
-    aria2_daemon_start_cmd.append("--rpc-listen-all=true")
-    aria2_daemon_start_cmd.append(f"--rpc-listen-port=8100")
-    aria2_daemon_start_cmd.append("--rpc-max-request-size=1024M")
-
-    aria2_daemon_start_cmd.append("--conf-path=/torapp/tortoolkit/aria2/aria2.conf")
+    aria2_daemon_start_cmd = [
+        'aria2c',
+        '--daemon=true',
+        '--enable-rpc',
+        '--rpc-listen-all=true',
+        '--rpc-listen-port=8100',
+        '--rpc-max-request-size=1024M',
+        '--conf-path=/torapp/tortoolkit/aria2/aria2.conf',
+    ]
 
     #
     torlog.debug(aria2_daemon_start_cmd)
@@ -71,37 +69,36 @@ async def add_torrent(aria_instance, torrent_file_path):
             False,
             "**FAILED** \n\nsomething wrongings when trying to add <u>TORRENT</u> file",
         )
-    if os.path.exists(torrent_file_path):
-        # Add Torrent Into Queue
-        try:
-
-            download = await aloop.run_in_executor(
-                None,
-                partial(
-                    aria_instance.add_torrent,
-                    torrent_file_path,
-                    uris=None,
-                    options=None,
-                    position=None,
-                ),
-            )
-
-        except Exception as e:
-            return (
-                False,
-                "**FAILED** \n"
-                + str(e)
-                + " \nPlease do not send SLOW links. Read /help",
-            )
-        else:
-            return True, "" + download.gid + ""
-    else:
+    if not os.path.exists(torrent_file_path):
         return (
             False,
             "**FAILED** \n"
             + str(e)
             + " \nPlease try other sources to get workable link",
         )
+    # Add Torrent Into Queue
+    try:
+
+        download = await aloop.run_in_executor(
+            None,
+            partial(
+                aria_instance.add_torrent,
+                torrent_file_path,
+                uris=None,
+                options=None,
+                position=None,
+            ),
+        )
+
+    except Exception as e:
+        return (
+            False,
+            "**FAILED** \n"
+            + str(e)
+            + " \nPlease do not send SLOW links. Read /help",
+        )
+    else:
+        return True, "" + download.gid + ""
 
 
 async def add_url(aria_instance, text_url, c_file_name):
@@ -207,8 +204,13 @@ async def check_progress_for_dl(
 ):
     try:
         file = await aloop.run_in_executor(None, aria2.get_download, gid)
-        complete = file.is_complete
-        if not complete:
+        if complete := file.is_complete:
+            await event.edit(
+                f"**Download completed:** `{file.name}`\n\n**Size:** `{file.total_length_string()}`",
+                buttons=None,
+            )
+            return True, "**Download Complete**"
+        else:
             if not file.error_message:
                 msg = ""
                 # REMOVED HEROKU BLOCK
@@ -227,12 +229,6 @@ async def check_progress_for_dl(
             return await check_progress_for_dl(
                 aria2, gid, event, previous_message, task, user_msg=user_msg
             )
-        else:
-            await event.edit(
-                f"**Download completed:** `{file.name}`\n\n**Size:** `{file.total_length_string()}`",
-                buttons=None,
-            )
-            return True, "**Download Complete**"
     except aria2p.client.ClientException as e:
         if " not found" in str(e) or "'file'" in str(e):
             fname = "N/A"
@@ -254,9 +250,8 @@ async def check_progress_for_dl(
         torlog.info(str(e))
         if " not found" in str(e) or "'file'" in str(e):
             return False, "The Download was canceled."
-        else:
-            torlog.warning(str(e))
-            return False, f"Error: {str(e)}"
+        torlog.warning(str(e))
+        return False, f'Error: {e}'
 
 
 async def remove_dl(gid):
